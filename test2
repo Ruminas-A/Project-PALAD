@@ -1,0 +1,133 @@
+import cv2
+import mediapipe as mp
+import numpy as np
+import threading
+import time
+
+mp_hands = mp.solutions.hands
+mp_drawing = mp.solutions.drawing_utils
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+def process_camera(cam_index, window_prefix):
+    # Wait for virtual device to be ready
+    for _ in range(10):
+        cap = cv2.VideoCapture(cam_index)
+        if cap.isOpened():
+            break
+        print(f"⏳ Waiting for camera {cam_index}...")
+        time.sleep(1)
+    else:
+        print(f"❌ Could not open camera {cam_index}")
+        return
+
+    with mp_hands.Hands(
+        static_image_mode=False,
+        max_num_hands=1,
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7
+    ) as hands:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                print(f"⚠️ Frame grab failed on cam {cam_index}")
+                continue
+
+            frame = cv2.flip(frame, 1)
+            clean_frame = frame.copy()
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            result = hands.process(rgb)
+
+            roi, roi_processed = None, None
+
+            if result.multi_hand_landmarks:
+                for idx, hand_landmarks in enumerate(result.multi_hand_landmarks):
+                    hand_label = result.multi_handedness[idx].classification[0].label
+                    mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+                    h, w, _ = frame.shape
+                    wrist = np.array([hand_landmarks.landmark[0].x, hand_landmarks.landmark[0].y])
+                    index_base = np.array([hand_landmarks.landmark[5].x, hand_landmarks.landmark[5].y])
+                    pinky_base = np.array([hand_landmarks.landmark[17].x, hand_landmarks.landmark[17].y])
+
+                    v1, v2 = index_base - wrist, pinky_base - wrist
+                    normal = np.cross(np.append(v1, 0), np.append(v2, 0))
+                    normal /= np.linalg.norm(normal) + 1e-6
+                    if hand_label == "Left":
+                        normal = -normal
+                    side = "Palm Side" if normal[2] > 0 else "Back Side"
+
+                    cv2.putText(frame, f"{hand_label}: {side}", (30, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                                (0, 255, 0) if side == "Palm Side" else (0, 0, 255), 2)
+                    if side != "Palm Side":
+                        continue
+
+                    fingertip_ids = [4, 8, 12, 16, 20]
+                    tip_positions = np.array([[hand_landmarks.landmark[i].x, hand_landmarks.landmark[i].y] for i in fingertip_ids])
+                    wrist_pos = np.array([hand_landmarks.landmark[0].x, hand_landmarks.landmark[0].y])
+                    distances = np.linalg.norm(tip_positions - wrist_pos, axis=1)
+                    openness = np.mean(distances) / (np.linalg.norm(index_base - pinky_base) + 1e-6)
+
+                    cv2.putText(frame, f"Openness: {openness:.2f}", (30, 90),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+
+                    if openness < 2.5:
+                        continue
+
+                    def to_xy(lm):
+                        return np.array([int(lm[0] * w), int(lm[1] * h)], dtype=np.int32)
+
+                    wrist_xy, index_base_xy, pinky_base_xy = to_xy(wrist), to_xy(index_base), to_xy(pinky_base)
+                    base_vec = pinky_base_xy - index_base_xy
+                    mid_top = (index_base_xy + pinky_base_xy) / 2
+                    down_vec = wrist_xy - mid_top
+                    perp_vec = down_vec - (np.dot(down_vec, base_vec) / np.dot(base_vec, base_vec)) * base_vec
+                    perp_unit = perp_vec / (np.linalg.norm(perp_vec) + 1e-6)
+                    base_unit = base_vec / (np.linalg.norm(base_vec) + 1e-6)
+                    roi_size = int(np.linalg.norm(base_vec))
+                    if np.dot(wrist_xy - mid_top, perp_unit) < 0:
+                        perp_unit = -perp_unit
+
+                    pts = np.array([
+                        index_base_xy,
+                        pinky_base_xy,
+                        (pinky_base_xy + perp_unit * roi_size).astype(int),
+                        (index_base_xy + perp_unit * roi_size).astype(int)
+                    ], np.int32).reshape((-1, 1, 2))
+                    cv2.polylines(frame, [pts], True, (255, 0, 0), 2)
+
+                    angle = np.degrees(np.arctan2(base_unit[1], base_unit[0]))
+                    center = tuple(np.mean(pts[:, 0, :], axis=0).astype(int))
+                    rotation_matrix = cv2.getRotationMatrix2D(center, angle + (180 if hand_label == "Left" else 0), 1.0)
+                    rotated = cv2.warpAffine(clean_frame, rotation_matrix, (w, h))
+                    pts_rotated = cv2.transform(pts, rotation_matrix)
+
+                    x_min, y_min = np.min(pts_rotated[:, 0, :], axis=0)
+                    x_max, y_max = np.max(pts_rotated[:, 0, :], axis=0)
+                    x_min, y_min = np.clip([x_min, y_min], 0, [w - 1, h - 1])
+                    x_max, y_max = np.clip([x_max, y_max], 0, [w - 1, h - 1])
+                    if x_max > x_min and y_max > y_min:
+                        roi = rotated[int(y_min):int(y_max), int(x_min):int(x_max)]
+                        if roi.size > 0:
+                            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                            roi_processed = clahe.apply(cv2.GaussianBlur(gray, (5, 5), 0))
+                            roi_processed = cv2.resize(roi_processed, (256, 256))
+                            if hand_label == "Left":
+                                roi_processed = cv2.flip(roi_processed, 1)
+
+            cv2.imshow(f"{window_prefix} Camera Feed", frame)
+            if roi is not None:
+                cv2.imshow(f"{window_prefix} Palm ROI", roi)
+            if roi_processed is not None:
+                cv2.imshow(f"{window_prefix} Palm ROI (Normalized)", roi_processed)
+
+            if cv2.waitKey(5) & 0xFF == 27:
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+thread0 = threading.Thread(target=process_camera, args=(0, "Cam0"))
+thread1 = threading.Thread(target=process_camera, args=(1, "Cam1"))
+thread0.start(); thread1.start()
+thread0.join(); thread1.join()
