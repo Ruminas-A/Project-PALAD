@@ -1,1 +1,3 @@
-wget -q https://update.code.visualstudio.com/latest/arm64/deb -O vscode.deb && sudo apt install -y ./vscode.deb && rm vscode.deb
+wget https://update.code.visualstudio.com/latest/arm64/deb -O vscode.deb
+sudo apt install -y ./vscode.deb
+rm vscode.deb
