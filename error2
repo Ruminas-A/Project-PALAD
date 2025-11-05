@@ -1,10 +1,23 @@
-palad@paladpi:~ $ lsmod | grep v4l2
-v4l2_cci               49152  1 imx219
-regmap_i2c             49152  1 v4l2_cci
-v4l2_mem2mem           65536  1 rpi_hevc_dec
-v4l2_fwnode            49152  4 imx219,rp1_cfe
-v4l2_async             49152  3 v4l2_fwnode,imx219,rp1_cfe
-videobuf2_v4l2         49152  4 pisp_be,rpi_hevc_dec,rp1_cfe,v4l2_mem2mem
-videodev              344064  8 v4l2_async,v4l2_fwnode,imx219,pisp_be,rpi_hevc_dec,videobuf2_v4l2,rp1_cfe,v4l2_mem2mem
-videobuf2_common       98304  7 pisp_be,rpi_hevc_dec,videobuf2_dma_contig,videobuf2_v4l2,rp1_cfe,v4l2_mem2mem,videobuf2_memops
-mc                     81920  9 v4l2_async,videodev,imx219,pisp_be,rpi_hevc_dec,videobuf2_v4l2,rp1_cfe,videobuf2_common,v4l2_mem2mem
+palad@paladpi:~ $ rpicam-hello --list
+Available cameras
+-----------------
+0 : imx219 [3280x2464 10-bit RGGB] (/base/axi/pcie@1000120000/rp1/i2c@88000/imx219@10)
+    Modes: 'SRGGB10_CSI2P' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                             1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                             1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                             3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+           'SRGGB8' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                      1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                      1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                      3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+
+1 : imx219 [3280x2464 10-bit RGGB] (/base/axi/pcie@1000120000/rp1/i2c@80000/imx219@10)
+    Modes: 'SRGGB10_CSI2P' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                             1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                             1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                             3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+           'SRGGB8' : 640x480 [103.33 fps - (1000, 752)/1280x960 crop]
+                      1640x1232 [41.85 fps - (0, 0)/3280x2464 crop]
+                      1920x1080 [47.57 fps - (680, 692)/1920x1080 crop]
+                      3280x2464 [21.19 fps - (0, 0)/3280x2464 crop]
+
