@@ -1,2 +1,118 @@
-sudo media-ctl -l "'imx219 10-0010':0 -> 'rpi-csi2 0':0[1]"
-sudo media-ctl -l "'imx219 10-0011':0 -> 'rpi-csi2 1':0[1]"
+palad@paladpi:~ $ sudo media-ctl -p
+Media controller API version 6.12.47
+
+Media device information
+------------------------
+driver          rp1-cfe
+model           rp1-cfe
+serial          
+bus info        platform:1f00110000.csi
+hw revision     0x114666
+driver version  6.12.47
+
+Device topology
+- entity 1: csi2 (8 pads, 8 links, 0 routes)
+            type V4L2 subdev subtype Unknown flags 0
+            device node name /dev/v4l-subdev3
+	pad0: SINK
+		[stream:0 fmt:SBGGR10_1X10/1640x1232 field:none colorspace:raw]
+		<- "imx219 10-0010":0 [ENABLED,IMMUTABLE]
+	pad1: SINK
+		[stream:0 fmt:unknown/16384x1 field:none]
+	pad2: SINK
+		[stream:0 fmt:SRGGB10_1X10/640x480 field:none colorspace:raw xfer:none ycbcr:601 quantization:full-range]
+	pad3: SINK
+		[stream:0 fmt:SRGGB10_1X10/640x480 field:none colorspace:raw xfer:none ycbcr:601 quantization:full-range]
+	pad4: SOURCE
+		[stream:0 fmt:SBGGR16_1X16/1640x1232 field:none colorspace:raw]
+		-> "rp1-cfe-csi2_ch0":0 []
+		-> "pisp-fe":0 [ENABLED]
+	pad5: SOURCE
+		[stream:0 fmt:unknown/16384x1 field:none]
+		-> "rp1-cfe-embedded":0 []
+	pad6: SOURCE
+		[stream:0 fmt:SRGGB10_1X10/640x480 field:none colorspace:raw xfer:none ycbcr:601 quantization:full-range]
+		-> "rp1-cfe-csi2_ch2":0 []
+		-> "pisp-fe":0 []
+	pad7: SOURCE
+		[stream:0 fmt:SRGGB10_1X10/640x480 field:none colorspace:raw xfer:none ycbcr:601 quantization:full-range]
+		-> "rp1-cfe-csi2_ch3":0 []
+		-> "pisp-fe":0 []
+
+- entity 10: pisp-fe (5 pads, 7 links, 0 routes)
+             type V4L2 subdev subtype Unknown flags 0
+             device node name /dev/v4l-subdev4
+	pad0: SINK,MUST_CONNECT
+		[stream:0 fmt:SBGGR16_1X16/1640x1232 field:none colorspace:raw]
+		<- "csi2":4 [ENABLED]
+		<- "csi2":6 []
+		<- "csi2":7 []
+	pad1: SINK
+		[stream:0 fmt:FIXED/16384x1 field:none]
+		<- "rp1-cfe-fe_config":0 [ENABLED]
+	pad2: SOURCE
+		[stream:0 fmt:SBGGR16_1X16/1640x1232 field:none colorspace:raw]
+		-> "rp1-cfe-fe_image0":0 [ENABLED]
+	pad3: SOURCE
+		[stream:0 fmt:SBGGR16_1X16/1640x1232 field:none colorspace:raw]
+		-> "rp1-cfe-fe_image1":0 []
+	pad4: SOURCE
+		[stream:0 fmt:FIXED/16384x1 field:none]
+		-> "rp1-cfe-fe_stats":0 [ENABLED]
+
+- entity 16: imx219 10-0010 (1 pad, 1 link, 0 routes)
+             type V4L2 subdev subtype Sensor flags 0
+             device node name /dev/v4l-subdev5
+	pad0: SOURCE
+		[stream:0 fmt:SBGGR10_1X10/1640x1232 field:none colorspace:raw xfer:none ycbcr:601 quantization:full-range
+		 crop.bounds:(8,8)/3280x2464
+		 crop:(8,8)/3280x2464]
+		-> "csi2":0 [ENABLED,IMMUTABLE]
+
+- entity 18: rp1-cfe-csi2_ch0 (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video8
+	pad0: SINK,MUST_CONNECT
+		<- "csi2":4 []
+
+- entity 22: rp1-cfe-embedded (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video9
+	pad0: SINK,MUST_CONNECT
+		<- "csi2":5 []
+
+- entity 26: rp1-cfe-csi2_ch2 (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video10
+	pad0: SINK,MUST_CONNECT
+		<- "csi2":6 []
+
+- entity 30: rp1-cfe-csi2_ch3 (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video11
+	pad0: SINK,MUST_CONNECT
+		<- "csi2":7 []
+
+- entity 34: rp1-cfe-fe_image0 (1 pad, 1 link)
+             type Node subtype V4L flags 1
+             device node name /dev/video12
+	pad0: SINK,MUST_CONNECT
+		<- "pisp-fe":2 [ENABLED]
+
+- entity 38: rp1-cfe-fe_image1 (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video13
+	pad0: SINK,MUST_CONNECT
+		<- "pisp-fe":3 []
+
+- entity 42: rp1-cfe-fe_stats (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video14
+	pad0: SINK,MUST_CONNECT
+		<- "pisp-fe":4 [ENABLED]
+
+- entity 46: rp1-cfe-fe_config (1 pad, 1 link)
+             type Node subtype V4L flags 0
+             device node name /dev/video15
+	pad0: SOURCE,MUST_CONNECT
+		-> "pisp-fe":1 [ENABLED]
